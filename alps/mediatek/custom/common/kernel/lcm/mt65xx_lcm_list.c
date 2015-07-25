@@ -18,7 +18,7 @@
 #define LCD_DEBUG(fmt)  printk(fmt)
 #endif
 
-extern LCM_DRIVER otm9605a_dsi_vdo_lg_lcm_drv
+extern LCM_DRIVER otm9605a_dsi_vdo_lg_lcm_drv;
 extern LCM_DRIVER hx8369_lcm_drv;
 extern LCM_DRIVER hx8369_6575_lcm_drv;
 extern LCM_DRIVER hx8363_6575_dsi_lcm_drv;
