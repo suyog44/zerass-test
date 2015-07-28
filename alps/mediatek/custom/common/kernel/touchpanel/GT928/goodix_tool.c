@@ -38,7 +38,7 @@
 #pragma pack(1)
 typedef struct
 {
-    u8  wr;         //write read flag£¬0:R  1:W  2:PID 3:
+    u8  wr;         //write read flagï¿½ï¿½0:R  1:W  2:PID 3:
     u8  flag;       //0:no need flag/int 1: need flag  2:need int
     u8 flag_addr[2];  //flag address
     u8  flag_val;   //flag val
@@ -155,8 +155,6 @@ static void unregister_i2c_func(void)
 s32 init_wr_node(struct i2c_client *client)
 {
     s32 i;
-    const s8 entry_prefix[] = "GMNode_";
-    s8 gtp_tool_entry[30];
 
     gt_client = i2c_client_point;
     GTP_INFO("client %d.%d", (int)gt_client, (int)client);
@@ -194,13 +192,7 @@ s32 init_wr_node(struct i2c_client *client)
 
     register_i2c_func();
 
- //   goodix_proc_entry = create_proc_entry(GOODIX_ENTRY_NAME, 0664, NULL);
- 
-    memset(gtp_tool_entry, 0, sizeof(gtp_tool_entry));
-    i = sizeof(entry_prefix)/sizeof(s8);
-    memcpy(gtp_tool_entry, entry_prefix, i-1);
-    memcpy(&gtp_tool_entry[i-1], __DATE__, sizeof(__DATE__)/sizeof(s8));
-    goodix_proc_entry = create_proc_entry(gtp_tool_entry, 0664, NULL);
+    goodix_proc_entry = create_proc_entry(GOODIX_ENTRY_NAME, 0666, NULL);
 
     if (goodix_proc_entry == NULL)
     {
