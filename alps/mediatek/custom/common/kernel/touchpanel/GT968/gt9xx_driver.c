@@ -917,9 +917,9 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 {
     s32 err = 0;
     s32 ret = 0;
-
     u16 version_info;
-#ifdef GTP_HAVE_TOUCH_KEY
+    struct task_struct *thread = NULL;
+#if 0 //GTP_HAVE_TOUCH_KEY
     s32 idx = 0;
 #endif
 #ifdef TPD_PROXIMITY
@@ -932,24 +932,26 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
     if (ret < 0)
     {
         GTP_ERROR("I2C communication ERROR!");
-		return -1;
+        goto out;
     }
-   // printk("MYCAT tpd_i2c_probe\n");
-#if GTP_FW_DOWNLOAD                         //20121212
-    ret = gup_init_fw_proc(client);
-
-    if (ret < 0)
+	
+#ifdef MTK_CTP_RESET_CONFIG
+    thread = kthread_run(tpd_clear_config, 0, "mtk-tpd-clear-config");
+    if (IS_ERR(thread))
     {
-        printk("MYCAT Create fw download thread error.");
+        err = PTR_ERR(thread);
+        GTP_INFO(TPD_DEVICE " failed to create kernel thread for clearing config: %d", err);
     }
-
+    thread = NULL;
 #endif
+
 #if GTP_AUTO_UPDATE
     ret = gup_init_update_proc(client);
 
     if (ret < 0)
     {
-        printk("MYCAT Create update thread error.");
+        GTP_ERROR("Create update thread error.");
+        goto out;
     }
 
 #endif
@@ -957,34 +959,33 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 
 #ifdef VELOCITY_CUSTOM
-
-    if ((err = misc_register(&tpd_misc_device)))
-    {
-        printk("mycat mtk_tpd: tpd_misc_device register failed\n");
-    }
+	tpd_v_magnify_x = TPD_VELOCITY_CUSTOM_X;
+	tpd_v_magnify_y = TPD_VELOCITY_CUSTOM_Y;
 
 #endif
-
-    ret = gtp_init_panel(client);
-
-    if (ret < 0)
-    {
-        printk("mycat GTP init panel failed.");
-    }
 
     ret = gtp_read_version(client, &version_info);
 
     if (ret < 0)
     {
-        printk("mycat Read version failed.");
+        GTP_ERROR("Read version failed.");
+        goto out;
     }
 
+    ret = gtp_init_panel(client);
+
+    if (ret < 0)
+    {
+        GTP_ERROR("GTP init panel failed.");
+        goto out;
+    }
     // Create proc file system
-    gt91xx_config_proc = create_proc_entry(GT91XX_CONFIG_PROC_FILE, 0666, NULL);
+    gt91xx_config_proc = create_proc_entry(GT91XX_CONFIG_PROC_FILE, 0664, NULL);
 
     if (gt91xx_config_proc == NULL)
     {
-        printk("mycat create_proc_entry %s failed\n", GT91XX_CONFIG_PROC_FILE);
+        GTP_ERROR("create_proc_entry %s failed", GT91XX_CONFIG_PROC_FILE);
+        goto out;
     }
     else
     {
@@ -1001,38 +1002,29 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
     if (IS_ERR(thread))
     {
         err = PTR_ERR(thread);
-        GTP_INFO(TPD_DEVICE " MYCAT failed to create kernel thread: %d\n", err);
+        GTP_INFO(TPD_DEVICE " failed to create kernel thread: %d", err);
+        goto out;
     }
 
-#if GTP_HAVE_TOUCH_KEY
+#if 0//GTP_HAVE_TOUCH_KEY
 
-    for (idx = 0; idx < GTP_MAX_KEY_NUM; idx++)
+    for (idx = 0; idx < TPD_KEY_COUNT; idx++)
     {
         input_set_capability(tpd->dev, EV_KEY, touch_key_array[idx]);
     }
 
 #endif
 
-    // set INT mode
-    mt_set_gpio_mode(GPIO_CTP_EINT_PIN, GPIO_CTP_EINT_PIN_M_EINT);
-    mt_set_gpio_dir(GPIO_CTP_EINT_PIN, GPIO_DIR_IN);
-    mt_set_gpio_pull_enable(GPIO_CTP_EINT_PIN, GPIO_PULL_DISABLE);
-
-    msleep(50);
-
-    mt65xx_eint_set_sens(CUST_EINT_TOUCH_PANEL_NUM, CUST_EINT_TOUCH_PANEL_SENSITIVE);
-    mt65xx_eint_set_hw_debounce(CUST_EINT_TOUCH_PANEL_NUM, CUST_EINT_TOUCH_PANEL_DEBOUNCE_CN);
-
-    if (!int_type)
+    if (!int_type)	//EINTF_TRIGGER
     {
-        mt65xx_eint_registration(CUST_EINT_TOUCH_PANEL_NUM, CUST_EINT_TOUCH_PANEL_DEBOUNCE_EN, CUST_EINT_POLARITY_HIGH, tpd_eint_interrupt_handler, 1);
+        mt_eint_registration(CUST_EINT_TOUCH_PANEL_NUM, EINTF_TRIGGER_RISING, tpd_eint_interrupt_handler, 0);
     }
     else
     {
-        mt65xx_eint_registration(CUST_EINT_TOUCH_PANEL_NUM, CUST_EINT_TOUCH_PANEL_DEBOUNCE_EN, CUST_EINT_POLARITY_LOW, tpd_eint_interrupt_handler, 1);
+        mt_eint_registration(CUST_EINT_TOUCH_PANEL_NUM, EINTF_TRIGGER_FALLING, tpd_eint_interrupt_handler, 0);// disable auto-unmask
     }
 
-    mt65xx_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
+    mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
 
 #ifdef TPD_PROXIMITY
     //obj_ps.self = cm3623_obj;
@@ -1052,10 +1044,18 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
     queue_delayed_work(gtp_esd_check_workqueue, &gtp_esd_check_work, TPD_ESD_CHECK_CIRCLE);
 #endif
 
+#ifdef GTP_CHARGER_DETECT
+    INIT_DELAYED_WORK(&gtp_charger_check_work, gtp_charger_check_func);
+    gtp_charger_check_workqueue = create_workqueue("gtp_charger_check");
+    queue_delayed_work(gtp_charger_check_workqueue, &gtp_charger_check_work, TPD_CHARGER_CHECK_CIRCLE);
+#endif
     tpd_load_status = 1;
 
     return 0;
+out:
+    return -1;
 }
+
 
 static void tpd_eint_interrupt_handler(void)
 {
