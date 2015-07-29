@@ -701,8 +701,8 @@ static s32 gtp_init_panel(struct i2c_client *client)
     u8 cfg_info_group2[] = CTP_CFG_GROUP2;
     u8 cfg_info_group3[] = CTP_CFG_GROUP3;
     u8 cfg_info_group4[] = CTP_CFG_GROUP4;
-    u8 cfg_info_group5[] = CTP_CFG_GROUP5;
-    u8 cfg_info_group6[] = CTP_CFG_GROUP6;
+    u8 cfg_info_group5[] = CTP_CFG_GROUP4;
+    u8 cfg_info_group6[] = CTP_CFG_GROUP4;
     u8 *send_cfg_buf[6] = {cfg_info_group1, cfg_info_group2, cfg_info_group3, cfg_info_group4, cfg_info_group5, cfg_info_group6};
     u8 cfg_info_len[6] = {sizeof(cfg_info_group1) / sizeof(cfg_info_group1[0]),
                           sizeof(cfg_info_group2) / sizeof(cfg_info_group2[0]),
