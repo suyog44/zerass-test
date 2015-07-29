@@ -912,7 +912,6 @@ reset_proc:
 
     return ret;
 }
-
 static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
     s32 err = 0;
@@ -959,6 +958,8 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 
 #ifdef VELOCITY_CUSTOM
+	#define tpd_v_magnify_x TPD_VELOCITY_CUSTOM_X
+	#define tpd_v_magnify_y TPD_VELOCITY_CUSTOM_Y
 	tpd_v_magnify_x = TPD_VELOCITY_CUSTOM_X;
 	tpd_v_magnify_y = TPD_VELOCITY_CUSTOM_Y;
 
