@@ -8,7 +8,7 @@
 #include <linux/seq_file.h>
 #include <linux/list.h>
 #include <linux/proc_fs.h> 
-
+#define CUST_EINT_TOUCH_PANEL_SENSITIVE   0
 #include <linux/slab.h>
 
 #include <mach/mt_gpio.h>
