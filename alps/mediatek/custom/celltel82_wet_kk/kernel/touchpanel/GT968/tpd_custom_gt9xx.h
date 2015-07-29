@@ -232,7 +232,7 @@ extern int i2c_read_bytes(struct i2c_client *client, u16 addr, u8 *rxbuf, int le
 #define TPD_KEYS        {KEY_MENU, KEY_HOMEPAGE, KEY_BACK}
 #define TPD_KEYS_DIM    {{key_1,60,40},{key_2,60,40},{key_3,60,40}}
 
-#elif defined(BIRD_13C43_A3C_TP_PARAM)
+#elif defined(GTP_CUSTOM_CFG)
 
 //bioute GT968
 #define CTP_CFG_GROUP1 {\
