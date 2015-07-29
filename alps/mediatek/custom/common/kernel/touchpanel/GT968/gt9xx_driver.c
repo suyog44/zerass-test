@@ -1616,7 +1616,7 @@ static void tpd_suspend(struct early_suspend *h)
 #endif
 
     tpd_halt = 1;
-    mt65xx_eint_mask(CUST_EINT_TOUCH_PANEL_NUM);
+    mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM);
 
     ret = gtp_enter_sleep(i2c_client_point);
 
@@ -1646,7 +1646,7 @@ static void tpd_resume(struct early_suspend *h)
         GTP_ERROR("GTP later resume failed.");
     }
 
-    mt65xx_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
+    mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
     tpd_halt = 0;
 
 #if GTP_ESD_PROTECT
